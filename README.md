@@ -1,5 +1,7 @@
 # Build Script for Hydra
 
+<img src="assets/hydra.png" width="200" align="right" />
+
 This script will compile the [Hydra](https://github.com/SamoZ256/hydra) emulator locally on macOS.<br>
 It also has these features: 
 - Can automatically install/update Homebrew dependencies (or skip the checks entirely)
