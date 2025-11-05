@@ -5,8 +5,10 @@
 This script will compile the [Hydra](https://github.com/SamoZ256/hydra) emulator locally on macOS.<br>
 It also has these features: 
 - Can automatically install/update Homebrew dependencies (or skip the checks entirely)
+- Can build Debug or Release builds
+- Can build SDL or SwiftUI frontends
 - Can check out a specified commit or Pull Request
-- Pauses so the source code can be edited before completing the build 
+- Pauses so the source code can be edited before completing the build
 
 ## Running the script
 
