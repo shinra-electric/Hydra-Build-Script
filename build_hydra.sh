@@ -138,13 +138,13 @@ build() {
 main_menu() {
 	PS3='What would you like to do? '
 	OPTIONS=(
-		"Build without Homebrew checks"
 		"Build"
+		"Build with Homebrew checks"
 		"Quit")
 	select opt in $OPTIONS[@]
 	do
 		case $opt in
-			"Build without Homebrew checks")
+			"Build")
 				echo "\n${RED}Skipping Homebrew checks${NC}"
 				echo "${PURPLE}The script will fail if any of the dependencies are missing${NC}\n"
 				clone_repo
@@ -153,7 +153,7 @@ main_menu() {
 				cleanup_menu
 				break
 				;;
-			"Build")
+			"Build with Homebrew checks")
 				homebrew_check
 				dependencies_check
 				clone_repo
