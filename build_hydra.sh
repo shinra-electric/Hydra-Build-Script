@@ -10,8 +10,11 @@ NC='\033[0m' # No Color
 SCRIPT_DIR=${0:a:h}
 cd "$SCRIPT_DIR"
 
-# Detect CPU architecture
-ARCH="$(uname -m)"
+set_vars() {
+	# Detect CPU architecture
+	ARCH="$(uname -m)"
+	DEPS=( boost cmake ninja sdl3 fmt )
+}
 
 introduction() {
 	echo "\n${PURPLE}This script is for compiling ${GREEN}Hydra${PURPLE} for ${GREEN}Apple Silicon${NC}\n"
@@ -21,32 +24,102 @@ introduction() {
 		echo "${RED}This script can't be run on an Intel Mac${NC}\n"
 		exit 0
 	fi
-	
-	echo "${GREEN}Homebrew${PURPLE} and the ${GREEN}Xcode command-line tools${PURPLE} are required${NC}"
-	echo "${PURPLE}If they are not present you will be prompted to install them${NC}\n"
 }
 
+# Functions for checking for Homebrew installation
 homebrew_check() {
+	echo "${PURPLE}Checking for Homebrew...${NC}"
 	if ! command -v brew &> /dev/null; then
-		echo "${PURPLE}Homebrew not found. Installing Homebrew...${NC}"
-		/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-		if [[ "${ARCH_NAME}" == "arm64" ]]; then 
-			(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> $HOME/.zprofile
-			eval "$(/opt/homebrew/bin/brew shellenv)"
-			else 
-			(echo; echo 'eval "$(/usr/local/bin/brew shellenv)"') >> $HOME/.zprofile
-			eval "$(/usr/local/bin/brew shellenv)"
-		fi
-		
-		# Check for errors
-		if [ $? -ne 0 ]; then
-			echo "${RED}There was an issue installing Homebrew${NC}"
-			echo "${PURPLE}Quitting script...${NC}"	
-			exit 1
-		fi
+		echo "${RED}Homebrew has not been detected${NC}\n"
+		homebrew_install_menu
 	else
-		echo  "${PURPLE}Homebrew found. Updating Homebrew...${NC}"
-		brew update
+		echo "${GREEN}Homebrew has been detected${NC}\n"
+		homebrew_update_menu
+	fi
+}
+
+homebrew_install_menu() {
+	echo "${GREEN}Homebrew${PURPLE} and the ${GREEN}Xcode command-line tools${PURPLE} are required${NC}\n"
+	PS3='Would you like to install Homebrew? '
+	OPTIONS=(
+		"Yes"
+		"No")
+	select opt in $OPTIONS[@]
+	do
+		case $opt in
+			"Yes")
+				install_homebrew
+				break
+				;;
+			"No")
+				echo "${PURPLE}The script cannot run without Homebrew${NC}"
+				echo "${RED}Quitting${NC}"
+				exit 0
+				;;
+			*) 
+				echo "\"$REPLY\" is not one of the options..."
+				echo "Enter the number of the option and press enter to select"
+				;;
+		esac
+	done
+}
+
+homebrew_update_menu() {
+	echo "${PURPLE}You may need to install or update Homebrew packages${NC}"
+	echo "${PURPLE}It is recommended to perform this check if it your first time running the script${NC}\n"
+	PS3='Would you like to check dependencies? '
+	OPTIONS=(
+		"Continue without checking"
+		"Install / Update")
+	select opt in $OPTIONS[@]
+	do
+		case $opt in
+			"Continue without checking")
+				echo "\n${RED}Skipping Homebrew checks${NC}"
+				echo "${PURPLE}The script will fail if any of the dependencies are missing${NC}\n"
+				break
+				;;
+			"Install / Update")
+				update_homebrew
+				dependencies_check
+				break
+				;;
+			*) 
+				echo "\"$REPLY\" is not one of the options..."
+				echo "Enter the number of the option and press enter to select"
+				;;
+		esac
+	done
+}
+
+install_homebrew() {
+	echo "${PURPLE}Installing Homebrew...${NC}"
+	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+	if [[ "${ARCH}" == "arm64" ]]; then 
+		(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> $HOME/.zprofile
+		eval "$(/opt/homebrew/bin/brew shellenv)"
+	else 
+		(echo; echo 'eval "$(/usr/local/bin/brew shellenv)"') >> $HOME/.zprofile
+		eval "$(/usr/local/bin/brew shellenv)"
+	fi
+	
+	# Check for errors
+	if [ $? -ne 0 ]; then
+		echo "${RED}There was an issue installing Homebrew${NC}"
+		echo "${PURPLE}Quitting script...${NC}"	
+		exit 1
+	fi
+}
+
+update_homebrew() {
+	echo "${PURPLE}Updating Homebrew...${NC}"
+	brew update
+	
+	# Check for errors
+	if [ $? -ne 0 ]; then
+		echo "${RED}There was an issue updating Homebrew${NC}"
+		echo "${PURPLE}Quitting script...${NC}"	
+		exit 1
 	fi
 }
 
@@ -54,7 +127,7 @@ homebrew_check() {
 single_dependency_check() {
 	if [ -d "$(brew --prefix)/opt/$1" ]; then
 		echo "${GREEN}Found $1. Checking for updates...${NC}"
-			brew upgrade $1
+		brew upgrade $1
 	else
 		 echo "${PURPLE}Did not find $1. Installing...${NC}"
 		brew install $1
@@ -62,20 +135,12 @@ single_dependency_check() {
 }
 
 dependencies_check() {
-	echo "${PURPLE}Checking for native Homebrew dependencies...${NC}"
-	# Required native Homebrew packages
-	deps=( boost cmake ninja sdl3 fmt )
+	echo "${PURPLE}Checking for Homebrew dependencies...${NC}"
 	
-	for dep in $deps[@]
+	for dep in $DEPS[@]
 	do 
 		single_dependency_check $dep
 	done
-}
-
-# Update individual submodule
-git_update_submodules() {
-	echo "${PURPLE}Updating submodules...${NC}"
-	git submodule update --init --recursive
 }
 
 clone_repo() { 
@@ -84,19 +149,70 @@ clone_repo() {
 		echo "${PURPLE}Cloning Hydra Repository...${NC}"
 		git clone https://github.com/SamoZ256/hydra
 		cd hydra
-		git_update_submodules
+		git submodule update --init --recursive
 		
 	else
 		echo "${PURPLE}Hydra repository already exists${NC}"
 		cd hydra
 		rm -rf build
 		git pull origin main
-		git_update_submodules
+		git submodule update --init --recursive
+	fi
+	
+	# Check for errors
+	if [ $? -ne 0 ]; then
+		echo "${RED}There was an issue with the source code repository${NC}"
+		echo "${PURPLE}Quitting script...${NC}"	
+		exit 1
 	fi
 }
 
+main_menu() {
+	set_vars
+	introduction
+	homebrew_check
+	clone_repo
+	echo "\n${PURPLE}Ready to build${NC}"
+	echo "${PURPLE}You can modify the code now before building${NC}\n"
+	PS3='Would you like to continue building? '
+	OPTIONS=(
+		"Continue"
+		"Checkout Commit"
+		"Checkout Pull Request"
+		"Quit")
+	select opt in $OPTIONS[@]
+	do
+		case $opt in
+			"Continue")
+				build
+				cleanup_menu
+				break
+				;;
+			"Checkout Commit")
+				checkout_commit_menu
+				build
+				cleanup_menu
+				break
+				;;
+			"Checkout Pull Request")
+				checkout_pr_menu
+				build
+				cleanup_menu
+				break
+				;;
+			"Quit")
+				echo "${RED}Quitting${NC}"
+				exit 0
+				;;
+			*) 
+				echo "\"$REPLY\" is not one of the options..."
+				echo "Enter the number of the option and press enter to select"
+				;;
+		esac
+	done
+}
+
 build() {
-	# Set variables
 	release_type_menu
 	frontend_menu
 
@@ -135,87 +251,13 @@ build() {
 	
 }
 
-main_menu() {
-	PS3='What would you like to do? '
-	OPTIONS=(
-		"Build"
-		"Build with Homebrew checks"
-		"Quit")
-	select opt in $OPTIONS[@]
-	do
-		case $opt in
-			"Build")
-				echo "\n${RED}Skipping Homebrew checks${NC}"
-				echo "${PURPLE}The script will fail if any of the dependencies are missing${NC}\n"
-				clone_repo
-				continue_menu
-				build
-				cleanup_menu
-				break
-				;;
-			"Build with Homebrew checks")
-				homebrew_check
-				dependencies_check
-				clone_repo
-				continue_menu
-				build
-				cleanup_menu
-				break
-				;;
-			"Quit")
-				echo "${RED}Quitting${NC}"
-				exit 0
-				;;
-			*) 
-				echo "\"$REPLY\" is not one of the options..."
-				echo "Enter the number of the option and press enter to select"
-				;;
-		esac
-	done
-}
-
-continue_menu() {
-	echo "\n${PURPLE}Ready to build${NC}"
-	echo "${PURPLE}You can modify the code now before building${NC}\n"
-	PS3='Would you like to continue building? '
-	OPTIONS=(
-		"Continue"
-		"Checkout Commit"
-		"Checkout Pull Request"
-		"Quit")
-	select opt in $OPTIONS[@]
-	do
-		case $opt in
-			"Continue")
-				break
-				;;
-			"Checkout Commit")
-				checkout_commit_menu
-				break
-				;;
-			"Checkout Pull Request")
-				checkout_pr_menu
-				break
-				;;
-			"Quit")
-				echo "${PURPLE}Quitting${NC}"
-				exit 0
-				;;
-			*) 
-				echo "\"$REPLY\" is not one of the options..."
-				echo "Enter the number of the option and press enter to select"
-				;;
-		esac
-	done
-}
-
 checkout_commit_menu() {
 	echo "\n${PURPLE}What commit would you like to checkout?${NC}"
 	commit_hash=$(printf '%s' 'Commit Hash: ' >&2; read x && printf '%s' "$x")
 	git checkout "$commit_hash"
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Could not find the specified commit${NC}\n"
-		continue_menu
+		break
 	fi 
 }
 
@@ -226,7 +268,7 @@ checkout_pr_menu() {
 	git fetch origin pull/$pr_id/head:$branch_name
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Could not find the specified pull request${NC}\n"
-		continue_menu
+		break
 	fi 
 	git switch $branch_name
 }
@@ -306,5 +348,4 @@ cleanup_menu() {
 	done
 }
 
-introduction
 main_menu
