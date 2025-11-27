@@ -153,7 +153,7 @@ clone_repo() {
 	else
 		echo "${PURPLE}Hydra repository already exists${NC}"
 		cd hydra
-		if [ ! -d "build" ]; then
+		if [ -d "build" ]; then
 			rm -rf build
 		fi
 		git pull origin main
