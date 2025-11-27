@@ -49,7 +49,7 @@ homebrew_install_menu() {
 		case $opt in
 			"Yes")
 				install_homebrew
-				homebrew_update_menu
+				dependencies_check
 				break
 				;;
 			"No")
