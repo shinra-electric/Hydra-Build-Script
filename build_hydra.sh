@@ -11,7 +11,6 @@ SCRIPT_DIR=${0:a:h}
 cd "$SCRIPT_DIR"
 
 set_vars() {
-	# Detect CPU architecture
 	ARCH="$(uname -m)"
 	DEPS=( boost cmake ninja sdl3 fmt )
 }
@@ -42,17 +41,17 @@ homebrew_install_menu() {
 	echo "${GREEN}Homebrew${PURPLE} and the ${GREEN}Xcode command-line tools${PURPLE} are required${NC}\n"
 	PS3='Would you like to install Homebrew? '
 	OPTIONS=(
-		"Yes"
-		"No")
+		"Install"
+		"Quit")
 	select opt in $OPTIONS[@]
 	do
 		case $opt in
-			"Yes")
+			"Install")
 				install_homebrew
 				dependencies_check
 				break
 				;;
-			"No")
+			"Quit")
 				echo "${PURPLE}The script cannot run without Homebrew${NC}"
 				echo "${RED}Quitting${NC}"
 				exit 0
@@ -137,7 +136,6 @@ single_dependency_check() {
 
 dependencies_check() {
 	echo "${PURPLE}Checking for Homebrew dependencies...${NC}"
-	
 	for dep in $DEPS[@]
 	do 
 		single_dependency_check $dep
@@ -145,7 +143,7 @@ dependencies_check() {
 }
 
 clone_repo() { 
-# Check to see if the source folder exists
+	# Check to see if the source folder exists
 	if [ ! -d "hydra" ]; then
 		echo "${PURPLE}Cloning Hydra Repository...${NC}"
 		git clone https://github.com/SamoZ256/hydra
@@ -187,19 +185,16 @@ main_menu() {
 			"Continue")
 				build
 				cleanup_menu
-				break
 				;;
 			"Checkout Commit")
 				checkout_commit_menu
 				build
 				cleanup_menu
-				break
 				;;
 			"Checkout Pull Request")
 				checkout_pr_menu
 				build
 				cleanup_menu
-				break
 				;;
 			"Quit")
 				echo "${RED}Quitting${NC}"
@@ -249,7 +244,7 @@ build() {
 	# Codesign
 	# echo "${PURPLE}Codesigning...${NC}"
 	# codesign --force --deep --sign - build/bin/Hydra.app/Contents/MacOS/Hydra
-	
+	mv build/bin/Hydra.app $SCRIPT_DIR
 }
 
 checkout_commit_menu() {
