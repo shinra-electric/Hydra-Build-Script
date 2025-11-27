@@ -143,9 +143,8 @@ dependencies_check() {
 }
 
 clone_repo() { 
-	# Check to see if the source folder exists
+	echo "${PURPLE}Cloning Hydra Repository...${NC}"
 	if [ ! -d "hydra" ]; then
-		echo "${PURPLE}Cloning Hydra Repository...${NC}"
 		git clone https://github.com/SamoZ256/hydra
 		cd hydra
 		git submodule update --init --recursive
@@ -240,6 +239,9 @@ build() {
 	# Codesign
 	# echo "${PURPLE}Codesigning...${NC}"
 	# codesign --force --deep --sign - build/bin/Hydra.app/Contents/MacOS/Hydra
+	if [ -d "$SCRIPT_DIR/Hydra.app" ]; then
+		rm -rf "$SCRIPT_DIR/Hydra.app"
+	fi
 	mv build/bin/Hydra.app $SCRIPT_DIR
 }
 
