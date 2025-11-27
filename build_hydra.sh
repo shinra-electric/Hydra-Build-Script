@@ -167,10 +167,6 @@ clone_repo() {
 }
 
 main_menu() {
-	set_vars
-	introduction
-	homebrew_check
-	clone_repo
 	echo "\n${PURPLE}Ready to build${NC}"
 	echo "${PURPLE}You can modify the code now before building${NC}\n"
 	PS3='Would you like to continue building? '
@@ -188,13 +184,11 @@ main_menu() {
 				;;
 			"Checkout Commit")
 				checkout_commit_menu
-				build
-				cleanup_menu
+				main_menu
 				;;
 			"Checkout Pull Request")
 				checkout_pr_menu
-				build
-				cleanup_menu
+				main_menu
 				;;
 			"Quit")
 				echo "${RED}Quitting${NC}"
@@ -344,4 +338,8 @@ cleanup_menu() {
 	done
 }
 
+set_vars
+introduction
+homebrew_check
+clone_repo
 main_menu
