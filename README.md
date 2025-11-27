@@ -2,12 +2,12 @@
 
 <img src="assets/hydra.png" width="200" align="right" />
 
-This script will compile the [Hydra](https://github.com/SamoZ256/hydra) emulator locally on macOS.<br>
-It also has these features: 
-- Can automatically install/update Homebrew dependencies (or skip the checks entirely)
-- Can build Debug or Release builds
-- Can build SDL or SwiftUI frontends
-- Can check out a specified commit or Pull Request
+This script will compile the [Hydra](https://github.com/SamoZ256/hydra) emulator locally on macOS.<br><br>
+Features: 
+- Automatically installs/updates Homebrew dependencies (or skips the checks entirely)
+- Choose `Debug` or `Release` builds
+- Choose `SwiftUI` or `SDL` frontends
+- Check out a specific commit or Pull Request
 - Pauses so the source code can be edited before completing the build
 
 ## Running the script
@@ -22,4 +22,4 @@ When downloaded, you probably won't be able to run the script at first.<br>
 
 - If you have done the above steps and nothing happens when you run it, you may need to give it executable permissions. In Terminal, use the `cd` command to navigate to where the script is and enter `chmod +x build_hydra.sh`. <br>
 
-Note that the script will perform all actions in the same folder you run it from (likely your `Downloads` folder), so you may need to give it permission for this, or move it somewhere else.
+- Note that the script will perform all actions in the same folder you run it from (likely your `Downloads` folder), so you may need to give it permission for this, or move it somewhere else.
