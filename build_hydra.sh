@@ -236,6 +236,11 @@ build() {
 	echo "${PURPLE}Bundling dependencies...${NC}"
 	dylibbundler -of -cd -b -x  build/bin/Hydra.app/Contents/MacOS/Hydra -d build/bin/Hydra.app/Contents/libs
 	
+	if [ $? -ne 0 ]; then
+		echo "\n${RED}Bundling dependencies failed${NC}\n"
+		exit 1
+	fi 
+	
 	# Codesign
 	# echo "${PURPLE}Codesigning...${NC}"
 	# codesign --force --deep --sign - build/bin/Hydra.app/Contents/MacOS/Hydra
@@ -243,6 +248,9 @@ build() {
 		rm -rf "$SCRIPT_DIR/Hydra.app"
 	fi
 	mv build/bin/Hydra.app $SCRIPT_DIR
+	if [ $? -ne 0 ]; then
+		echo "\n${RED}Could not copy the app bundle to the script directory${NC}\n"
+	fi 
 }
 
 checkout_commit_menu() {
