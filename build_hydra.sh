@@ -39,7 +39,8 @@ homebrew_check() {
 
 homebrew_install_menu() {
 	echo "${GREEN}Homebrew${PURPLE} and the ${GREEN}Xcode command-line tools${PURPLE} are required${NC}\n"
-	PS3='Would you like to install Homebrew? '
+	echo "Would you like to install Homebrew? "
+	PS3='Enter your selection: '
 	OPTIONS=(
 		"Install"
 		"Quit")
@@ -67,7 +68,8 @@ homebrew_install_menu() {
 homebrew_update_menu() {
 	echo "${PURPLE}You may need to install or update Homebrew packages${NC}"
 	echo "${PURPLE}It is recommended to perform this check if it your first time running the script${NC}\n"
-	PS3='Would you like to check dependencies? '
+	echo "Would you like to check dependencies?"
+	PS3='Enter your selection: '
 	OPTIONS=(
 		"Continue without checking"
 		"Install / Update")
@@ -170,7 +172,8 @@ clone_repo() {
 main_menu() {
 	echo "\n${PURPLE}Ready to build${NC}"
 	echo "${PURPLE}You can modify the code now before building${NC}\n"
-	PS3='Would you like to continue building? '
+	echo "Would you like to continue building? "
+	PS3='Enter your selection: '
 	OPTIONS=(
 		"Continue"
 		"Checkout Commit"
@@ -204,8 +207,7 @@ main_menu() {
 }
 
 build() {
-	release_type_menu
-	frontend_menu
+	build_options_menu
 
 	# Configure build system
 	echo "${PURPLE}Configuring build...${NC}"
@@ -275,19 +277,34 @@ checkout_pr_menu() {
 	git switch $branch_name
 }
 
-release_type_menu() {
-	PS3='What release type would you like to build? '
+build_options_menu() {
+	echo "\nSelect your build options"
+	PS3='Enter your selection: '
 	OPTIONS=(
-		"Release"
-		"Debug")
+		"SwiftUI-Release"
+		"SwiftUI-Debug"
+		"SDL-Release"
+		"SDL-Debug")
 	select opt in $OPTIONS[@]
 	do
 		case $opt in
-			"Release")
+			"SwiftUI-Release")
+				FRONTEND_MODE="SwiftUI"
 				BUILD_MODE="Release"
 				break
 				;;
-			"Debug")
+			"SwiftUI-Debug")
+				FRONTEND_MODE="SwiftUI"
+				BUILD_MODE="Debug"
+			break
+			;;
+			"SDL-Release")
+				FRONTEND_MODE="SDL3"
+				BUILD_MODE="Release"
+				break
+			;;
+			"SDL-Debug")
+				FRONTEND_MODE="SDL3"
 				BUILD_MODE="Debug"
 				break
 				;;
@@ -299,34 +316,11 @@ release_type_menu() {
 	done
 }
 
-frontend_menu() {
-	PS3='What frontend would you like to use? '
-	OPTIONS=(
-		"SwiftUI"
-		"SDL")
-	select opt in $OPTIONS[@]
-	do
-		case $opt in
-			"SwiftUI")
-				FRONTEND_MODE="SwiftUI"
-				break
-				;;
-			"SDL")
-				FRONTEND_MODE="SDL3"
-				break
-				;;
-			*) 
-				echo "\"$REPLY\" is not one of the options..."
-				echo "Enter the number of the option and press enter to select"
-				;;
-		esac
-	done
-}
 
 cleanup_menu() {
 	echo "\n${GREEN}The script has completed${NC}"
-	
-	PS3='Would you like to delete the source folder? '
+	echo "\nWould you like to delete the source folder?"
+	PS3='Enter your selection: '
 	OPTIONS=(
 		"Quit"
 		"Delete")
