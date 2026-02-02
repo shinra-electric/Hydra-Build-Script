@@ -12,7 +12,7 @@ cd "$SCRIPT_DIR"
 
 set_vars() {
 	ARCH="$(uname -m)"
-	DEPS=( boost cmake ninja sdl3 fmt )
+	DEPS=( boost cmake dylibbundler ninja sdl3 fmt )
 }
 
 introduction() {
