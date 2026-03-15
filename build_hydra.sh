@@ -16,11 +16,15 @@ set_vars() {
 }
 
 introduction() {
-	echo "\n${PURPLE}This script is for compiling ${GREEN}Hydra${PURPLE} for ${GREEN}Apple Silicon${NC}\n"
-	
-	if [[ $ARCH == "x86_64" ]]; then 
-		echo "\n${PURPLE}Your CPU architecture is ${RED}$ARCH${NC}\n"
-		echo "${RED}This script can't be run on an Intel Mac${NC}\n"
+	echo "\n${PURPLE}This script is for compiling ${GREEN}Hydra${PURPLE}\n"
+
+	if [[ $ARCH == "x86_64" ]]; then
+		echo "${PURPLE}Your CPU architecture is ${GREEN}$ARCH${NC}\n"
+	elif [[ $ARCH == "arm64" ]]; then
+	    echo "${PURPLE}Your CPU architecture is ${GREEN}$ARCH${NC}\n"
+	else
+	    echo "${RED}Could not identify your CPU type${NC}\n"
+		echo "${RED}Quitting${NC}"
 		exit 0
 	fi
 }
@@ -57,7 +61,7 @@ homebrew_install_menu() {
 				echo "${RED}Quitting${NC}"
 				exit 0
 				;;
-			*) 
+			*)
 				echo "\"$REPLY\" is not one of the options..."
 				echo "Enter the number of the option and press enter to select"
 				;;
@@ -86,7 +90,7 @@ homebrew_update_menu() {
 				dependencies_check
 				break
 				;;
-			*) 
+			*)
 				echo "\"$REPLY\" is not one of the options..."
 				echo "Enter the number of the option and press enter to select"
 				;;
@@ -97,18 +101,18 @@ homebrew_update_menu() {
 install_homebrew() {
 	echo "${PURPLE}Installing Homebrew...${NC}"
 	/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-	if [[ "${ARCH}" == "arm64" ]]; then 
+	if [[ "${ARCH}" == "arm64" ]]; then
 		(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> $HOME/.zprofile
 		eval "$(/opt/homebrew/bin/brew shellenv)"
-	else 
+	else
 		(echo; echo 'eval "$(/usr/local/bin/brew shellenv)"') >> $HOME/.zprofile
 		eval "$(/usr/local/bin/brew shellenv)"
 	fi
-	
+
 	# Check for errors
 	if [ $? -ne 0 ]; then
 		echo "${RED}There was an issue installing Homebrew${NC}"
-		echo "${PURPLE}Quitting script...${NC}"	
+		echo "${PURPLE}Quitting script...${NC}"
 		exit 1
 	fi
 }
@@ -116,11 +120,11 @@ install_homebrew() {
 update_homebrew() {
 	echo "${PURPLE}Updating Homebrew...${NC}"
 	brew update
-	
+
 	# Check for errors
 	if [ $? -ne 0 ]; then
 		echo "${RED}There was an issue updating Homebrew${NC}"
-		echo "${PURPLE}Quitting script...${NC}"	
+		echo "${PURPLE}Quitting script...${NC}"
 		exit 1
 	fi
 }
@@ -139,18 +143,18 @@ single_dependency_check() {
 dependencies_check() {
 	echo "${PURPLE}Checking for Homebrew dependencies...${NC}"
 	for dep in $DEPS[@]
-	do 
+	do
 		single_dependency_check $dep
 	done
 }
 
-clone_repo() { 
+clone_repo() {
 	echo "${PURPLE}Cloning Hydra Repository...${NC}"
 	if [ ! -d "hydra" ]; then
 		git clone https://github.com/SamoZ256/hydra
 		cd hydra
 		git submodule update --init --recursive
-		
+
 	else
 		echo "${PURPLE}Hydra repository already exists${NC}"
 		cd hydra
@@ -160,11 +164,11 @@ clone_repo() {
 		git pull origin main
 		git submodule update --init --recursive
 	fi
-	
+
 	# Check for errors
 	if [ $? -ne 0 ]; then
 		echo "${RED}There was an issue with the source code repository${NC}"
-		echo "${PURPLE}Quitting script...${NC}"	
+		echo "${PURPLE}Quitting script...${NC}"
 		exit 1
 	fi
 }
@@ -198,7 +202,7 @@ main_menu() {
 				echo "${RED}Quitting${NC}"
 				exit 0
 				;;
-			*) 
+			*)
 				echo "\"$REPLY\" is not one of the options..."
 				echo "Enter the number of the option and press enter to select"
 				;;
@@ -212,49 +216,50 @@ build() {
 	# Configure build system
 	echo "${PURPLE}Configuring build...${NC}"
 	cmake . -B build \
+	-DCMAKE_OSX_ARCHITECTURES=$ARCH \
 	-DCMAKE_BUILD_TYPE=$BUILD_MODE \
 	-DFRONTEND=$FRONTEND_MODE \
 	-DMACOS_BUNDLE=ON \
 	-GNinja
-	
+
 	# Check for errors
 	if [ $? -ne 0 ]; then
 		echo "${RED}There was an issue configuring CMake${NC}"
-		echo "${PURPLE}Quitting script...${NC}"	
+		echo "${PURPLE}Quitting script...${NC}"
 		exit 1
 	fi
-	
+
 	# Build
 	echo "${PURPLE}Building...${NC}"
 	ninja -C build
-	
+
 	# Check whether the build was successful
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Building failed${NC}\n"
 		exit 1
-	fi 
-	
+	fi
+
 	# Bundle dependencies
 	echo "${PURPLE}Bundling dependencies...${NC}"
 	dylibbundler -of -cd -b -x  build/bin/Hydra.app/Contents/MacOS/Hydra -d build/bin/Hydra.app/Contents/libs
 	while install_name_tool -delete_rpath @executable_path/../libs/ build/bin/Hydra.app/Contents/MacOS/Hydra 2>/dev/null; do :; done
 	install_name_tool -add_rpath @executable_path/../libs/ build/bin/Hydra.app/Contents/MacOS/Hydra
-	
+
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Bundling dependencies failed${NC}\n"
 		exit 1
-	fi 
-	
+	fi
+
 	echo "${PURPLE}Codesigning...${NC}"
 	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - build/bin/Hydra.app/Contents/MacOS/Hydra
-	
+
 	if [ -d "$SCRIPT_DIR/Hydra.app" ]; then
 		rm -rf "$SCRIPT_DIR/Hydra.app"
 	fi
 	mv build/bin/Hydra.app $SCRIPT_DIR
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Could not copy the app bundle to the script directory${NC}\n"
-	fi 
+	fi
 }
 
 checkout_commit_menu() {
@@ -264,7 +269,7 @@ checkout_commit_menu() {
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Could not find the specified commit${NC}\n"
 		break
-	fi 
+	fi
 }
 
 checkout_pr_menu() {
@@ -275,7 +280,7 @@ checkout_pr_menu() {
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Could not find the specified pull request${NC}\n"
 		break
-	fi 
+	fi
 	git switch $branch_name
 }
 
@@ -310,7 +315,7 @@ build_options_menu() {
 				BUILD_MODE="Debug"
 				break
 				;;
-			*) 
+			*)
 				echo "\"$REPLY\" is not one of the options..."
 				echo "Enter the number of the option and press enter to select"
 				;;
@@ -338,7 +343,7 @@ cleanup_menu() {
 				rm -rf hydra
 				exit 0
 				;;
-			*) 
+			*)
 				echo "\"$REPLY\" is not one of the options..."
 				echo "Enter the number of the option and press enter to select"
 				;;
