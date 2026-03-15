@@ -237,15 +237,17 @@ build() {
 	# Bundle dependencies
 	echo "${PURPLE}Bundling dependencies...${NC}"
 	dylibbundler -of -cd -b -x  build/bin/Hydra.app/Contents/MacOS/Hydra -d build/bin/Hydra.app/Contents/libs
+	while install_name_tool -delete_rpath @executable_path/../libs/ build/bin/Hydra.app/Contents/MacOS/Hydra 2>/dev/null; do :; done
+	install_name_tool -add_rpath @executable_path/../libs/ build/bin/Hydra.app/Contents/MacOS/Hydra
 	
 	if [ $? -ne 0 ]; then
 		echo "\n${RED}Bundling dependencies failed${NC}\n"
 		exit 1
 	fi 
 	
-	# Codesign
-	# echo "${PURPLE}Codesigning...${NC}"
-	# codesign --force --deep --sign - build/bin/Hydra.app/Contents/MacOS/Hydra
+	echo "${PURPLE}Codesigning...${NC}"
+	codesign --force --deep --preserve-metadata=entitlements,requirements,flags,runtime --sign - build/bin/Hydra.app/Contents/MacOS/Hydra
+	
 	if [ -d "$SCRIPT_DIR/Hydra.app" ]; then
 		rm -rf "$SCRIPT_DIR/Hydra.app"
 	fi
